@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dashboard Builder
 =================
 Injects processed aggregates into the HTML template -> dashboard/index.html
@@ -17,9 +17,13 @@ DATA_FILE = BASE_DIR / "data" / "processed" / "aggregates.json"
 
 PLACEHOLDER = "__DATA_JSON__"
 
+COMPLETED_ON = "August 26, 2026"
+
 
 def main():
     data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    data["completed_on"] = COMPLETED_ON
+    data["generated_at"] = "2026-08-26"
     html = TEMPLATE.read_text(encoding="utf-8")
     if PLACEHOLDER not in html:
         raise SystemExit("template placeholder missing")
