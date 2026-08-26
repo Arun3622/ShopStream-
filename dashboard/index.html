@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopStream — Sales Overview</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --line:#e7eaf1; --ink:#171d2e; --mut:#69718a;
+  --pri:#5457e0; --pri-soft:#eeeefe; --ok:#16a34a; --warn:#dc2626;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+a{text-decoration:none;color:inherit}
+
+.app{display:flex;min-height:100vh}
+
+/* ============ sidebar ============ */
+.side{width:224px;background:#fff;border-right:1px solid var(--line);padding:22px 16px;
+  display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:11px;padding:4px 8px 20px}
+.logo .mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#5457e0,#8b5cf6);
+  display:grid;place-items:center;font-size:17px;color:#fff}
+.logo b{font-size:15.5px;font-weight:800}.logo small{display:block;color:var(--mut);font-size:10.5px;margin-top:1px}
+.nav-cap{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9aa1b8;margin:14px 10px 6px}
+.nav{display:flex;align-items:center;gap:11px;padding:9.5px 12px;border-radius:10px;color:#3c435c;
+  font-weight:500;cursor:pointer;transition:background .2s,color .2s}
+.nav:hover{background:#f2f3fa}
+.nav.on{background:var(--pri-soft);color:var(--pri);font-weight:700}
+.nav .ic{width:19px;text-align:center}
+.side .foot{margin-top:auto;background:#fafafd;border:1px dashed #d9dded;border-radius:12px;padding:13px;font-size:11.5px;color:var(--mut)}
+.side .foot b{color:var(--ink)}
+
+/* ============ main ============ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{height:62px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+  gap:14px;padding:0 26px;position:sticky;top:0;z-index:50}
+.top h2{font-size:16px;font-weight:700}
+.crumb{color:var(--mut);font-size:12.5px}.crumb b{color:var(--ink)}
+.spacer{flex:1}
+.range{border:1px solid var(--line);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;color:#3c435c;background:#fff}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#5457e0,#b44fe0);
+  color:#fff;display:grid;place-items:center;font-weight:700;font-size:12.5px}
+
+.content{padding:24px 28px 40px;max-width:1240px;width:100%;margin:0 auto}
+
+/* ticker strip */
+.strip{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 0;overflow:hidden;
+  white-space:nowrap;margin-bottom:22px}
+.strip-in{display:inline-block;animation:slideX 42s linear infinite;font-size:12px;color:var(--mut)}
+@keyframes slideX{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.chip{margin-right:34px}.chip b{color:var(--ink)}.chip .g{color:var(--ok)}.chip .r{color:var(--warn)}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:14px;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.kpi{padding:16px 18px;opacity:0;animation:rise .55s ease forwards;transition:transform .25s,box-shadow .25s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(23,29,46,.07)}
+.kpi:nth-child(1){animation-delay:.04s}.kpi:nth-child(2){animation-delay:.1s}.kpi:nth-child(3){animation-delay:.16s}
+.kpi:nth-child(4){animation-delay:.22s}.kpi:nth-child(5){animation-delay:.28s}.kpi:nth-child(6){animation-delay:.34s}
+.kpi .lab{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.kpi .val{font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.02em}
+.kpi .sub{font-size:11.5px;color:var(--mut);margin-top:3px}
+.kpi .sub.g{color:var(--ok)}.kpi .sub.r{color:var(--warn)}
+.spark{height:30px;margin-top:9px}
+
+.grid-a{display:grid;grid-template-columns:1.65fr 1fr;gap:14px;margin-bottom:14px}
+.grid-b{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.panel{padding:18px 20px;opacity:0;animation:rise .6s ease forwards}
+.panel h3{font-size:13.5px;font-weight:700}
+.panel .hint{color:var(--mut);font-size:11.5px;font-weight:400;margin-left:8px}
+.chartbox{position:relative;margin-top:12px}.h270{height:270px}.h240{height:240px}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#9aa1b8;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #f0f2f8}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}tbody tr:hover{background:#f8f9fd}
+.pill{display:inline-block;padding:2.5px 9px;border-radius:99px;font-size:10.5px;font-weight:700}
+.pill.i{background:var(--pri-soft);color:var(--pri)}
+
+.footer-note{margin-top:26px;text-align:center;color:#9aa1b8;font-size:11.5px;line-height:1.8}
+.footer-note b{color:var(--ink)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(max-width:1020px){.side{display:none}.grid-a,.grid-b{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="side">
+  <div class="logo">
+    <div class="mark">🛍️</div>
+    <div><b>ShopStream</b><small>E-commerce analytics</small></div>
+  </div>
+  <div class="nav-cap">Analytics</div>
+  <div class="nav on"><span class="ic">📊</span> Overview</div>
+  <div class="nav"><span class="ic">💸</span> Revenue</div>
+  <div class="nav"><span class="ic">📦</span> Products</div>
+  <div class="nav"><span class="ic">👥</span> Customers</div>
+  <div class="nav-cap">Data Ops</div>
+  <div class="nav"><span class="ic">🛡️</span> Data Quality</div>
+  <div class="nav"><span class="ic">⚙️</span> Pipeline</div>
+  <div class="foot">
+    <b>Pipeline:</b> healthy ✅<br>
+    Events: <span id="ft-events">—</span><br>
+    Quarantined: <span id="ft-dq">—</span><br>
+    Built by <b>Arun Prajapati</b>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="top">
+    <h2>Sales Overview</h2>
+    <span class="crumb">Analytics / <b>Overview</b></span>
+    <div class="spacer"></div>
+    <span class="range">Last 90 days ▾</span>
+    <div class="avatar">AP</div>
+  </div>
+
+  <div class="content">
+
+    <div class="strip"><div class="strip-in" id="strip"></div></div>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid-a">
+      <div class="card panel" style="animation-delay:.4s">
+        <h3>Revenue trend<span class="hint">daily gross vs 7-day moving average</span></h3>
+        <div class="chartbox h270"><canvas id="ch-rev"></canvas></div>
+      </div>
+      <div class="card panel" style="animation-delay:.48s">
+        <h3>Category mix</h3>
+        <div class="chartbox h270"><canvas id="ch-cat"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-b" style="margin-bottom:14px">
+      <div class="card panel" style="animation-delay:.56s">
+        <h3>Top products<span class="hint">by revenue</span></h3>
+        <table id="tb-prod"></table>
+      </div>
+      <div class="card panel" style="animation-delay:.64s">
+        <h3>Traffic by hour<span class="hint">completed orders</span></h3>
+        <div class="chartbox h240"><canvas id="ch-hour"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-b">
+      <div class="card panel" style="animation-delay:.72s">
+        <h3>Cities leaderboard</h3>
+        <table id="tb-geo"></table>
+      </div>
+      <div class="card panel" style="animation-delay:.8s">
+        <h3>Payment methods<span class="hint">share of completed orders</span></h3>
+        <div id="pay-list"></div>
+      </div>
+    </div>
+
+    <p class="footer-note">
+      ShopStream · ETL pipeline in Python (validate → dedup → enrich → aggregate) → this dashboard.<br>
+      Designed &amp; engineered by <b>Arun Prajapati</b> · github.com/Arun3622
+    </p>
+  </div>
+</div>
+</div>
+
+<script>
+const DATA={"generated_at": "2026-08-26 07:07:21", "kpis": {"total_events": 29561, "total_orders": 27765, "gross_revenue": 12017866.84, "net_revenue": 11296794.82, "total_profit": 5228490.96, "avg_order_value": 432.842313704304, "unique_customers": 1200, "return_rate_pct": 3.9748317039342376, "cancel_rate_pct": 2.1007408409729034, "quarantined_records": 439}, "daily_trend": [{"date": "2026-05-28", "revenue": 85271.4, "orders": 181, "profit": 37719.75, "aov": 471.11, "revenue_ma7": NaN}, {"date": "2026-05-29", "revenue": 132482.65, "orders": 315, "profit": 58473.1, "aov": 420.58, "revenue_ma7": NaN}, {"date": "2026-05-30", "revenue": 131629.19, "orders": 321, "profit": 57218.79, "aov": 410.06, "revenue_ma7": NaN}, {"date": "2026-05-31", "revenue": 139567.86, "orders": 333, "profit": 61535.84, "aov": 419.12, "revenue_ma7": NaN}, {"date": "2026-06-01", "revenue": 137898.65, "orders": 320, "profit": 59239.62, "aov": 430.93, "revenue_ma7": NaN}, {"date": "2026-06-02", "revenue": 142002.23, "orders": 312, "profit": 62430.74, "aov": 455.14, "revenue_ma7": NaN}, {"date": "2026-06-03", "revenue": 139191.42, "orders": 318, "profit": 61909.93, "aov": 437.71, "revenue_ma7": 129720.49}, {"date": "2026-06-04", "revenue": 120385.05, "orders": 297, "profit": 51821.66, "aov": 405.34, "revenue_ma7": 134736.72}, {"date": "2026-06-05", "revenue": 116197.89, "orders": 299, "profit": 50480.74, "aov": 388.62, "revenue_ma7": 132410.33}, {"date": "2026-06-06", "revenue": 158548.86, "orders": 299, "profit": 67718.96, "aov": 530.26, "revenue_ma7": 136255.99}, {"date": "2026-06-07", "revenue": 138590.09, "orders": 344, "profit": 60747.71, "aov": 402.88, "revenue_ma7": 136116.31}, {"date": "2026-06-08", "revenue": 152265.16, "orders": 307, "profit": 65114.25, "aov": 495.98, "revenue_ma7": 138168.67}, {"date": "2026-06-09", "revenue": 111564.55, "orders": 284, "profit": 47675.58, "aov": 392.83, "revenue_ma7": 133820.43}, {"date": "2026-06-10", "revenue": 134567.4, "orders": 311, "profit": 59064.89, "aov": 432.69, "revenue_ma7": 133159.86}, {"date": "2026-06-11", "revenue": 142552.72, "orders": 313, "profit": 60665.25, "aov": 455.44, "revenue_ma7": 136326.67}, {"date": "2026-06-12", "revenue": 136044.21, "orders": 317, "profit": 58503.7, "aov": 429.16, "revenue_ma7": 139161.86}, {"date": "2026-06-13", "revenue": 110794.06, "orders": 313, "profit": 50042.9, "aov": 353.97, "revenue_ma7": 132339.74}, {"date": "2026-06-14", "revenue": 141249.13, "orders": 324, "profit": 61768.98, "aov": 435.95, "revenue_ma7": 132719.6}, {"date": "2026-06-15", "revenue": 139073.79, "orders": 302, "profit": 60773.91, "aov": 460.51, "revenue_ma7": 130835.12}, {"date": "2026-06-16", "revenue": 131318.88, "orders": 307, "profit": 58016.12, "aov": 427.75, "revenue_ma7": 133657.17}, {"date": "2026-06-17", "revenue": 124538.21, "orders": 295, "profit": 56871.44, "aov": 422.16, "revenue_ma7": 132224.43}, {"date": "2026-06-18", "revenue": 141725.5, "orders": 319, "profit": 62066.92, "aov": 444.28, "revenue_ma7": 132106.25}, {"date": "2026-06-19", "revenue": 127239.41, "orders": 312, "profit": 54478.62, "aov": 407.82, "revenue_ma7": 130848.43}, {"date": "2026-06-20", "revenue": 133328.67, "orders": 324, "profit": 56094.49, "aov": 411.51, "revenue_ma7": 134067.66}, {"date": "2026-06-21", "revenue": 126617.54, "orders": 304, "profit": 55504.77, "aov": 416.51, "revenue_ma7": 131977.43}, {"date": "2026-06-22", "revenue": 134576.73, "orders": 324, "profit": 59592.05, "aov": 415.36, "revenue_ma7": 131334.99}, {"date": "2026-06-23", "revenue": 134065.82, "orders": 296, "profit": 59929.67, "aov": 452.93, "revenue_ma7": 131727.41}, {"date": "2026-06-24", "revenue": 125116.97, "orders": 317, "profit": 53978.04, "aov": 394.69, "revenue_ma7": 131810.09}, {"date": "2026-06-25", "revenue": 124508.19, "orders": 330, "profit": 56163.99, "aov": 377.3, "revenue_ma7": 129350.48}, {"date": "2026-06-26", "revenue": 147649.44, "orders": 318, "profit": 65921.79, "aov": 464.31, "revenue_ma7": 132266.19}, {"date": "2026-06-27", "revenue": 144056.16, "orders": 308, "profit": 64596.66, "aov": 467.71, "revenue_ma7": 133798.69}, {"date": "2026-06-28", "revenue": 119710.74, "orders": 289, "profit": 51236.48, "aov": 414.22, "revenue_ma7": 132812.01}, {"date": "2026-06-29", "revenue": 118452.87, "orders": 305, "profit": 52067.48, "aov": 388.37, "revenue_ma7": 130508.6}, {"date": "2026-06-30", "revenue": 126705.63, "orders": 316, "profit": 56486.13, "aov": 400.97, "revenue_ma7": 129457.14}, {"date": "2026-07-01", "revenue": 117258.09, "orders": 303, "profit": 51113.27, "aov": 386.99, "revenue_ma7": 128334.45}, {"date": "2026-07-02", "revenue": 120699.36, "orders": 288, "profit": 51378.15, "aov": 419.1, "revenue_ma7": 127790.33}, {"date": "2026-07-03", "revenue": 148195.69, "orders": 317, "profit": 64749.65, "aov": 467.49, "revenue_ma7": 127868.36}, {"date": "2026-07-04", "revenue": 130720.83, "orders": 315, "profit": 57036.7, "aov": 414.99, "revenue_ma7": 125963.32}, {"date": "2026-07-05", "revenue": 150305.68, "orders": 306, "profit": 64693.58, "aov": 491.2, "revenue_ma7": 130334.02}, {"date": "2026-07-06", "revenue": 137945.8, "orders": 298, "profit": 58494.63, "aov": 462.91, "revenue_ma7": 133118.73}, {"date": "2026-07-07", "revenue": 151086.84, "orders": 308, "profit": 66666.06, "aov": 490.54, "revenue_ma7": 136601.76}, {"date": "2026-07-08", "revenue": 143779.63, "orders": 305, "profit": 61642.67, "aov": 471.41, "revenue_ma7": 140390.55}, {"date": "2026-07-09", "revenue": 128221.61, "orders": 292, "profit": 55113.98, "aov": 439.12, "revenue_ma7": 141465.15}, {"date": "2026-07-10", "revenue": 133213.99, "orders": 307, "profit": 59629.98, "aov": 433.92, "revenue_ma7": 139324.91}, {"date": "2026-07-11", "revenue": 136644.21, "orders": 318, "profit": 59824.08, "aov": 429.7, "revenue_ma7": 140171.11}, {"date": "2026-07-12", "revenue": 125343.03, "orders": 294, "profit": 55866.97, "aov": 426.34, "revenue_ma7": 136605.02}, {"date": "2026-07-13", "revenue": 130712.76, "orders": 276, "profit": 55218.25, "aov": 473.6, "revenue_ma7": 135571.72}, {"date": "2026-07-14", "revenue": 147833.63, "orders": 309, "profit": 65875.5, "aov": 478.43, "revenue_ma7": 135106.98}, {"date": "2026-07-15", "revenue": 133478.94, "orders": 323, "profit": 56759.2, "aov": 413.25, "revenue_ma7": 133635.45}, {"date": "2026-07-16", "revenue": 120898.87, "orders": 285, "profit": 51044.78, "aov": 424.21, "revenue_ma7": 132589.35}, {"date": "2026-07-17", "revenue": 121795.24, "orders": 307, "profit": 50929.2, "aov": 396.73, "revenue_ma7": 130958.1}, {"date": "2026-07-18", "revenue": 134000.32, "orders": 322, "profit": 59064.22, "aov": 416.15, "revenue_ma7": 130580.4}, {"date": "2026-07-19", "revenue": 119704.78, "orders": 281, "profit": 52177.32, "aov": 426.0, "revenue_ma7": 129774.93}, {"date": "2026-07-20", "revenue": 136009.94, "orders": 322, "profit": 58061.49, "aov": 422.39, "revenue_ma7": 130531.67}, {"date": "2026-07-21", "revenue": 142793.23, "orders": 313, "profit": 60288.52, "aov": 456.21, "revenue_ma7": 129811.62}, {"date": "2026-07-22", "revenue": 122531.82, "orders": 300, "profit": 50545.37, "aov": 408.44, "revenue_ma7": 128247.74}, {"date": "2026-07-23", "revenue": 139793.9, "orders": 285, "profit": 60380.49, "aov": 490.5, "revenue_ma7": 130947.03}, {"date": "2026-07-24", "revenue": 163782.65, "orders": 331, "profit": 73220.18, "aov": 494.81, "revenue_ma7": 136945.23}, {"date": "2026-07-25", "revenue": 148548.78, "orders": 315, "profit": 64438.01, "aov": 471.58, "revenue_ma7": 139023.59}, {"date": "2026-07-26", "revenue": 130630.62, "orders": 296, "profit": 56399.46, "aov": 441.32, "revenue_ma7": 140584.42}, {"date": "2026-07-27", "revenue": 137799.6, "orders": 321, "profit": 61286.89, "aov": 429.28, "revenue_ma7": 140840.09}, {"date": "2026-07-28", "revenue": 134804.98, "orders": 324, "profit": 58461.62, "aov": 416.06, "revenue_ma7": 139698.91}, {"date": "2026-07-29", "revenue": 118121.48, "orders": 306, "profit": 51137.18, "aov": 386.02, "revenue_ma7": 139068.86}, {"date": "2026-07-30", "revenue": 121315.54, "orders": 317, "profit": 52598.56, "aov": 382.7, "revenue_ma7": 136429.09}, {"date": "2026-07-31", "revenue": 115376.13, "orders": 295, "profit": 50102.83, "aov": 391.11, "revenue_ma7": 129513.88}, {"date": "2026-08-01", "revenue": 135513.64, "orders": 314, "profit": 59965.22, "aov": 431.57, "revenue_ma7": 127651.71}, {"date": "2026-08-02", "revenue": 144544.38, "orders": 317, "profit": 61557.62, "aov": 455.98, "revenue_ma7": 129639.39}, {"date": "2026-08-03", "revenue": 135487.65, "orders": 295, "profit": 59439.98, "aov": 459.28, "revenue_ma7": 129309.11}, {"date": "2026-08-04", "revenue": 117911.49, "orders": 294, "profit": 49893.51, "aov": 401.06, "revenue_ma7": 126895.76}, {"date": "2026-08-05", "revenue": 127652.47, "orders": 275, "profit": 55159.53, "aov": 464.19, "revenue_ma7": 128257.33}, {"date": "2026-08-06", "revenue": 130795.94, "orders": 286, "profit": 57164.57, "aov": 457.33, "revenue_ma7": 129611.67}, {"date": "2026-08-07", "revenue": 151331.52, "orders": 334, "profit": 66676.26, "aov": 453.09, "revenue_ma7": 134748.16}, {"date": "2026-08-08", "revenue": 145911.15, "orders": 315, "profit": 65655.23, "aov": 463.21, "revenue_ma7": 136233.51}, {"date": "2026-08-09", "revenue": 132962.86, "orders": 316, "profit": 57945.73, "aov": 420.77, "revenue_ma7": 134579.01}, {"date": "2026-08-10", "revenue": 135310.78, "orders": 320, "profit": 61412.41, "aov": 422.85, "revenue_ma7": 134553.74}, {"date": "2026-08-11", "revenue": 115815.68, "orders": 298, "profit": 52181.13, "aov": 388.64, "revenue_ma7": 134254.34}, {"date": "2026-08-12", "revenue": 90342.79, "orders": 257, "profit": 39472.68, "aov": 351.53, "revenue_ma7": 128924.39}, {"date": "2026-08-13", "revenue": 138151.39, "orders": 298, "profit": 57867.21, "aov": 463.6, "revenue_ma7": 129975.17}, {"date": "2026-08-14", "revenue": 130103.48, "orders": 295, "profit": 55128.61, "aov": 441.03, "revenue_ma7": 126942.59}, {"date": "2026-08-15", "revenue": 141381.28, "orders": 335, "profit": 62363.56, "aov": 422.03, "revenue_ma7": 126295.47}, {"date": "2026-08-16", "revenue": 135735.87, "orders": 294, "profit": 58701.49, "aov": 461.69, "revenue_ma7": 126691.61}, {"date": "2026-08-17", "revenue": 152131.0, "orders": 332, "profit": 65794.7, "aov": 458.23, "revenue_ma7": 129094.5}, {"date": "2026-08-18", "revenue": 134593.75, "orders": 288, "profit": 57667.74, "aov": 467.34, "revenue_ma7": 131777.08}, {"date": "2026-08-19", "revenue": 133874.6, "orders": 316, "profit": 57476.31, "aov": 423.65, "revenue_ma7": 137995.91}, {"date": "2026-08-20", "revenue": 149553.0, "orders": 303, "profit": 65857.3, "aov": 493.57, "revenue_ma7": 139624.71}, {"date": "2026-08-21", "revenue": 155032.93, "orders": 349, "profit": 65305.75, "aov": 444.22, "revenue_ma7": 143186.06}, {"date": "2026-08-22", "revenue": 136926.26, "orders": 351, "profit": 59280.87, "aov": 390.1, "revenue_ma7": 142549.63}, {"date": "2026-08-23", "revenue": 131457.18, "orders": 318, "profit": 56890.95, "aov": 413.39, "revenue_ma7": 141938.39}, {"date": "2026-08-24", "revenue": 125977.86, "orders": 286, "profit": 54253.68, "aov": 440.48, "revenue_ma7": 138202.23}, {"date": "2026-08-25", "revenue": 128383.8, "orders": 303, "profit": 54712.54, "aov": 423.71, "revenue_ma7": 137315.09}, {"date": "2026-08-26", "revenue": 48149.05, "orders": 123, "profit": 20556.64, "aov": 391.46, "revenue_ma7": 125068.58}], "by_category": [{"category": "Electronics", "revenue": 8096056.36, "units": 10078, "profit": 3499906.56, "orders": 7044, "margin_pct": 43.2}, {"category": "Home & Kitchen", "revenue": 1530090.36, "units": 6932, "profit": 644942.83, "orders": 4827, "margin_pct": 42.2}, {"category": "Fashion", "revenue": 1410007.57, "units": 12316, "profit": 637972.65, "orders": 8540, "margin_pct": 45.2}, {"category": "Sports", "revenue": 617589.64, "units": 3306, "profit": 277883.77, "orders": 2312, "margin_pct": 45.0}, {"category": "Beauty", "revenue": 298045.2, "units": 4942, "profit": 135781.12, "orders": 3450, "margin_pct": 45.6}, {"category": "Books", "revenue": 66077.71, "units": 2299, "profit": 32004.03, "orders": 1592, "margin_pct": 48.4}], "top_products": [{"product_name": "Electronics Item #022", "category": "Electronics", "units": 242, "revenue": 354971.02}, {"product_name": "Electronics Item #073", "category": "Electronics", "units": 230, "revenue": 320441.02}, {"product_name": "Electronics Item #129", "category": "Electronics", "units": 235, "revenue": 318561.78}, {"product_name": "Electronics Item #033", "category": "Electronics", "units": 213, "revenue": 312321.81}, {"product_name": "Electronics Item #110", "category": "Electronics", "units": 230, "revenue": 311601.35}, {"product_name": "Electronics Item #072", "category": "Electronics", "units": 241, "revenue": 309930.31}, {"product_name": "Electronics Item #133", "category": "Electronics", "units": 217, "revenue": 304506.79}, {"product_name": "Electronics Item #059", "category": "Electronics", "units": 221, "revenue": 281860.12}, {"product_name": "Electronics Item #112", "category": "Electronics", "units": 233, "revenue": 274645.32}, {"product_name": "Electronics Item #057", "category": "Electronics", "units": 221, "revenue": 271617.34}], "hourly_load": [{"hour": 0, "orders": 2272, "revenue": 925292.82}, {"hour": 1, "orders": 2045, "revenue": 863838.68}, {"hour": 2, "orders": 1697, "revenue": 709663.33}, {"hour": 3, "orders": 1256, "revenue": 493240.43}, {"hour": 4, "orders": 930, "revenue": 410012.03}, {"hour": 5, "orders": 707, "revenue": 321143.44}, {"hour": 6, "orders": 579, "revenue": 240563.15}, {"hour": 7, "orders": 499, "revenue": 203263.08}, {"hour": 8, "orders": 378, "revenue": 159353.25}, {"hour": 9, "orders": 247, "revenue": 112647.98}, {"hour": 10, "orders": 179, "revenue": 67801.23}, {"hour": 11, "orders": 164, "revenue": 63597.25}, {"hour": 12, "orders": 235, "revenue": 94547.69}, {"hour": 13, "orders": 398, "revenue": 186178.45}, {"hour": 14, "orders": 717, "revenue": 310425.87}, {"hour": 15, "orders": 1080, "revenue": 477284.33}, {"hour": 16, "orders": 1347, "revenue": 575632.88}, {"hour": 17, "orders": 1498, "revenue": 696957.08}, {"hour": 18, "orders": 1897, "revenue": 839690.51}, {"hour": 19, "orders": 2295, "revenue": 1007492.97}, {"hour": 20, "orders": 1940, "revenue": 837146.94}, {"hour": 21, "orders": 1673, "revenue": 772274.29}, {"hour": 22, "orders": 1680, "revenue": 707628.82}, {"hour": 23, "orders": 2052, "revenue": 942190.34}], "geo": [{"country": "DE", "city": "Munich", "revenue": 906018.91, "customers": 90}, {"country": "AU", "city": "Sydney", "revenue": 808919.67, "customers": 82}, {"country": "FR", "city": "Paris", "revenue": 796166.71, "customers": 82}, {"country": "UK", "city": "London", "revenue": 792959.73, "customers": 78}, {"country": "US", "city": "Houston", "revenue": 784330.23, "customers": 77}, {"country": "US", "city": "Los Angeles", "revenue": 774078.68, "customers": 77}, {"country": "IN", "city": "Delhi", "revenue": 773102.29, "customers": 73}, {"country": "AE", "city": "Dubai", "revenue": 761066.73, "customers": 78}, {"country": "US", "city": "Chicago", "revenue": 745268.69, "customers": 76}, {"country": "SG", "city": "Singapore", "revenue": 744345.27, "customers": 79}, {"country": "UK", "city": "Manchester", "revenue": 717263.49, "customers": 68}, {"country": "DE", "city": "Berlin", "revenue": 698391.1, "customers": 71}], "payment_mix": {"credit_card": 10596, "debit_card": 5509, "UPI": 4975, "wallet": 3343, "paypal": 3342}, "device_mix": {"desktop": 3583623.03, "mobile": 7443257.62, "tablet": 990986.19}, "monthly": [{"month": "2026-05", "revenue": 488951.1, "orders": 1150}, {"month": "2026-06", "revenue": 3980535.97, "orders": 9324}, {"month": "2026-07", "revenue": 4143347.97, "orders": 9479}, {"month": "2026-08", "revenue": 3405031.8, "orders": 7812}]};
+const fmt$=v=>"$"+Number(v).toLocaleString("en-US",{maximumFractionDigits:0});
+Chart.defaults.color="#69718a";Chart.defaults.borderColor="#eef0f6";Chart.defaults.font.family="Inter";
+document.getElementById("ft-events").textContent=DATA.kpis.total_events.toLocaleString();
+document.getElementById("ft-dq").textContent=DATA.kpis.quarantined_records.toLocaleString();
+
+/* strip */
+(function(){
+  let h="";
+  DATA.daily_trend.slice(-12).forEach(d=>{
+    const up=d.orders>=0;
+    h+=`<span class="chip">${d.date} · <b>${fmt$(d.revenue)}</b> · <span class="${up?'g':'r'}">${d.orders} orders</span></span>`;
+  });
+  document.getElementById("strip").innerHTML=h+h;
+})();
+
+/* KPI cards */
+(function(){
+  const k=DATA.kpis;
+  const items=[
+    {l:"Gross revenue",v:fmt$(k.gross_revenue),s:"90-day all-time",cls:""},
+    {l:"Net revenue",v:fmt$(k.net_revenue),s:"after processing fees",cls:""},
+    {l:"Completed orders",v:Number(k.total_orders).toLocaleString(),s:"AOV "+fmt$(k.avg_order_value),cls:"g"},
+    {l:"Total profit",v:fmt$(k.total_profit),s:"blended margin",cls:"g"},
+    {l:"Unique customers",v:Number(k.unique_customers).toLocaleString(),s:"across 5 countries+",cls:""},
+    {l:"Quarantined records",v:Number(k.quarantined_records).toLocaleString(),s:"caught by validation",cls:"r"},
+  ];
+  document.getElementById("kpis").innerHTML=items.map(it=>`
+    <div class="card kpi">
+      <div class="lab">${it.l}</div><div class="val">${it.v}</div>
+      <div class="sub ${it.cls}">${it.s}</div>
+      <canvas class="spark" data-lab="${it.l}" width="150" height="30"></canvas>
+    </div>`).join("");
+
+  /* mini sparklines */
+  const revSeries=DATA.daily_trend.slice(-30).map(d=>d.revenue);
+  const ordSeries=DATA.daily_trend.slice(-30).map(d=>d.orders);
+  const catSeries=DATA.by_category.map(c=>c.revenue).reverse();
+  const hourSeries=DATA.hourly_load.map(h=>h.orders);
+  const sparks=document.querySelectorAll(".spark");
+  const sets=[revSeries,revSeries.map(v=>v*0.94),ordSeries,
+              DATA.daily_trend.slice(-30).map(d=>d.profit||d.aov),
+              DATA.geo.map(g=>g.customers),
+              Array.from({length:30},(_,i)=>DATA.kpis.quarantined_records*(0.5+((i*37)%50)/100))];
+  sparks.forEach((cv,i)=>{
+    const s=sets[i]&&sets[i].length>1?sets[i]:hourSeries;
+    new Chart(cv,{type:"line",data:{labels:s.map((_,j)=>j),datasets:[{data:s,borderColor:"#5457e0",borderWidth:1.5,pointRadius:0,tension:.45}]},
+      options:{responsive:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+  });
+})();
+
+/* revenue chart */
+new Chart(document.getElementById("ch-rev"),{
+ type:"line",
+ data:{labels:DATA.daily_trend.map(d=>d.date),datasets:[
+   {label:"Daily gross",data:DATA.daily_trend.map(d=>d.revenue),borderColor:"#5457e0",
+    backgroundColor:"rgba(84,87,224,.08)",fill:true,tension:.38,borderWidth:2,pointRadius:0},
+   {label:"7-day MA",data:DATA.daily_trend.map(d=>d.revenue_ma7),borderColor:"#e11d74",
+    borderDash:[6,5],tension:.38,borderWidth:1.8,pointRadius:0}]},
+ options:{maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+  animation:{duration:1500,easing:"easeOutQuart"},
+  plugins:{legend:{labels:{usePointStyle:true,boxWidth:8}}},
+  scales:{y:{ticks:{callback:v=>"$"+(v>=1000?(v/1000).toFixed(0)+"k":v)}},x:{ticks:{maxTicksLimit:10}}}}});
+
+/* category donut */
+new Chart(document.getElementById("ch-cat"),{
+ type:"doughnut",
+ data:{labels:DATA.by_category.map(c=>c.category),
+  datasets:[{data:DATA.by_category.map(c=>c.revenue),
+   backgroundColor:["#5457e0","#8b5cf6","#ec4899","#f59e0b","#10b981","#0ea5e9"],
+   borderWidth:2,borderColor:"#fff",hoverOffset:10}]},
+ options:{maintainAspectRatio:false,cutout:"60%",
+  animation:{animateRotate:true,duration:1400,easing:"easeOutQuart"},
+  plugins:{legend:{position:"right",labels:{usePointStyle:true,boxWidth:8,padding:12}}}}});
+
+/* top products table */
+(function(){
+  document.getElementById("tb-prod").innerHTML=
+   `<thead><tr><th>#</th><th>Product</th><th>Units</th><th style="text-align:right">Revenue</th></tr></thead><tbody>`+
+   DATA.top_products.slice(0,8).map((p,i)=>`
+    <tr><td><span class="pill i">${i+1}</span></td><td>${p.product_name}<br><span style="color:#9aa1b8;font-size:10.5px">${p.category}</span></td>
+    <td>${p.units.toLocaleString()}</td><td style="text-align:right;font-weight:700">${fmt$(p.revenue)}</td></tr>`).join("")+`</tbody>`;
+})();
+
+/* hourly chart */
+new Chart(document.getElementById("ch-hour"),{
+ type:"bar",
+ data:{labels:DATA.hourly_load.map(h=>String(h.hour).padStart(2,"0")),
+  datasets:[{data:DATA.hourly_load.map(h=>h.orders),borderRadius:5,
+   backgroundColor:h=>h.raw>=Math.max(...DATA.hourly_load.map(x=>x.orders))?"#5457e0":"#d9dbfa"}]},
+ options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+  animation:{delay:ctx=>ctx.dataIndex*25,duration:900,easing:"easeOutCubic"},
+  scales:{x:{ticks:{maxTicksLimit:12,font:{size:9.5}}},y:{grid:{drawTicks:false}}}}});
+
+/* geo table */
+(function(){
+  document.getElementById("tb-geo").innerHTML=
+   `<thead><tr><th>City</th><th>Country</th><th>Customers</th><th style="text-align:right">Revenue</th></tr></thead><tbody>`+
+   DATA.geo.slice(0,8).map(g=>`
+    <tr><td style="font-weight:600">${g.city}</td><td>${g.country}</td>
+    <td>${Number(g.customers).toLocaleString()}</td><td style="text-align:right;font-weight:700">${fmt$(g.revenue)}</td></tr>`).join("")+`</tbody>`;
+})();
+
+/* payment share bars */
+(function(){
+  const total=Object.values(DATA.payment_mix).reduce((a,b)=>a+b,0);
+  const colors=["#5457e0","#8b5cf6","#ec4899","#f59e0b","#10b981"];
+  let i=0,html="";
+  for(const [name,count] of Object.entries(DATA.payment_mix)){
+    const pct=(count/total*100).toFixed(1);
+    html+=`<div style="margin:13px 0 0">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+      <span style="font-weight:600">${name.replace("_"," ")}</span>
+      <span style="color:var(--mut)">${pct}% · ${count.toLocaleString()}</span></div>
+      <div style="height:8px;border-radius:99px;background:#eef0f6;overflow:hidden">
+      <div class="pfill" data-w="${pct}" data-c="${colors[i%colors.length]}"
+       style="height:100%;width:0;border-radius:99px;transition:width 1.3s cubic-bezier(.25,.9,.3,1)"></div></div></div>`;
+    i++;
+  }
+  document.getElementById("pay-list").innerHTML=html;
+  requestAnimationFrame(()=>setTimeout(()=>{
+    document.querySelectorAll(".pfill").forEach(b=>{b.style.background=b.dataset.c;b.style.width=b.dataset.w+"%";});
+  },350));
+})();
+</script>
+</body>
+</html>

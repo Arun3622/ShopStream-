@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopStream — Sales Overview</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --line:#e7eaf1; --ink:#171d2e; --mut:#69718a;
+  --pri:#5457e0; --pri-soft:#eeeefe; --ok:#16a34a; --warn:#dc2626;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+a{text-decoration:none;color:inherit}
+
+.app{display:flex;min-height:100vh}
+
+/* ============ sidebar ============ */
+.side{width:224px;background:#fff;border-right:1px solid var(--line);padding:22px 16px;
+  display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:11px;padding:4px 8px 20px}
+.logo .mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#5457e0,#8b5cf6);
+  display:grid;place-items:center;font-size:17px;color:#fff}
+.logo b{font-size:15.5px;font-weight:800}.logo small{display:block;color:var(--mut);font-size:10.5px;margin-top:1px}
+.nav-cap{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9aa1b8;margin:14px 10px 6px}
+.nav{display:flex;align-items:center;gap:11px;padding:9.5px 12px;border-radius:10px;color:#3c435c;
+  font-weight:500;cursor:pointer;transition:background .2s,color .2s}
+.nav:hover{background:#f2f3fa}
+.nav.on{background:var(--pri-soft);color:var(--pri);font-weight:700}
+.nav .ic{width:19px;text-align:center}
+.side .foot{margin-top:auto;background:#fafafd;border:1px dashed #d9dded;border-radius:12px;padding:13px;font-size:11.5px;color:var(--mut)}
+.side .foot b{color:var(--ink)}
+
+/* ============ main ============ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{height:62px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+  gap:14px;padding:0 26px;position:sticky;top:0;z-index:50}
+.top h2{font-size:16px;font-weight:700}
+.crumb{color:var(--mut);font-size:12.5px}.crumb b{color:var(--ink)}
+.spacer{flex:1}
+.range{border:1px solid var(--line);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;color:#3c435c;background:#fff}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#5457e0,#b44fe0);
+  color:#fff;display:grid;place-items:center;font-weight:700;font-size:12.5px}
+
+.content{padding:24px 28px 40px;max-width:1240px;width:100%;margin:0 auto}
+
+/* ticker strip */
+.strip{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 0;overflow:hidden;
+  white-space:nowrap;margin-bottom:22px}
+.strip-in{display:inline-block;animation:slideX 42s linear infinite;font-size:12px;color:var(--mut)}
+@keyframes slideX{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.chip{margin-right:34px}.chip b{color:var(--ink)}.chip .g{color:var(--ok)}.chip .r{color:var(--warn)}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:14px;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.kpi{padding:16px 18px;opacity:0;animation:rise .55s ease forwards;transition:transform .25s,box-shadow .25s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(23,29,46,.07)}
+.kpi:nth-child(1){animation-delay:.04s}.kpi:nth-child(2){animation-delay:.1s}.kpi:nth-child(3){animation-delay:.16s}
+.kpi:nth-child(4){animation-delay:.22s}.kpi:nth-child(5){animation-delay:.28s}.kpi:nth-child(6){animation-delay:.34s}
+.kpi .lab{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.kpi .val{font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.02em}
+.kpi .sub{font-size:11.5px;color:var(--mut);margin-top:3px}
+.kpi .sub.g{color:var(--ok)}.kpi .sub.r{color:var(--warn)}
+.spark{height:30px;margin-top:9px}
+
+.grid-a{display:grid;grid-template-columns:1.65fr 1fr;gap:14px;margin-bottom:14px}
+.grid-b{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.panel{padding:18px 20px;opacity:0;animation:rise .6s ease forwards}
+.panel h3{font-size:13.5px;font-weight:700}
+.panel .hint{color:var(--mut);font-size:11.5px;font-weight:400;margin-left:8px}
+.chartbox{position:relative;margin-top:12px}.h270{height:270px}.h240{height:240px}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#9aa1b8;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #f0f2f8}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}tbody tr:hover{background:#f8f9fd}
+.pill{display:inline-block;padding:2.5px 9px;border-radius:99px;font-size:10.5px;font-weight:700}
+.pill.i{background:var(--pri-soft);color:var(--pri)}
+
+.footer-note{margin-top:26px;text-align:center;color:#9aa1b8;font-size:11.5px;line-height:1.8}
+.footer-note b{color:var(--ink)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(max-width:1020px){.side{display:none}.grid-a,.grid-b{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="side">
+  <div class="logo">
+    <div class="mark">🛍️</div>
+    <div><b>ShopStream</b><small>E-commerce analytics</small></div>
+  </div>
+  <div class="nav-cap">Analytics</div>
+  <div class="nav on"><span class="ic">📊</span> Overview</div>
+  <div class="nav"><span class="ic">💸</span> Revenue</div>
+  <div class="nav"><span class="ic">📦</span> Products</div>
+  <div class="nav"><span class="ic">👥</span> Customers</div>
+  <div class="nav-cap">Data Ops</div>
+  <div class="nav"><span class="ic">🛡️</span> Data Quality</div>
+  <div class="nav"><span class="ic">⚙️</span> Pipeline</div>
+  <div class="foot">
+    <b>Pipeline:</b> healthy ✅<br>
+    Events: <span id="ft-events">—</span><br>
+    Quarantined: <span id="ft-dq">—</span><br>
+    Built by <b>Arun Prajapati</b>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="top">
+    <h2>Sales Overview</h2>
+    <span class="crumb">Analytics / <b>Overview</b></span>
+    <div class="spacer"></div>
+    <span class="range">Last 90 days ▾</span>
+    <div class="avatar">AP</div>
+  </div>
+
+  <div class="content">
+
+    <div class="strip"><div class="strip-in" id="strip"></div></div>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid-a">
+      <div class="card panel" style="animation-delay:.4s">
+        <h3>Revenue trend<span class="hint">daily gross vs 7-day moving average</span></h3>
+        <div class="chartbox h270"><canvas id="ch-rev"></canvas></div>
+      </div>
+      <div class="card panel" style="animation-delay:.48s">
+        <h3>Category mix</h3>
+        <div class="chartbox h270"><canvas id="ch-cat"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-b" style="margin-bottom:14px">
+      <div class="card panel" style="animation-delay:.56s">
+        <h3>Top products<span class="hint">by revenue</span></h3>
+        <table id="tb-prod"></table>
+      </div>
+      <div class="card panel" style="animation-delay:.64s">
+        <h3>Traffic by hour<span class="hint">completed orders</span></h3>
+        <div class="chartbox h240"><canvas id="ch-hour"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-b">
+      <div class="card panel" style="animation-delay:.72s">
+        <h3>Cities leaderboard</h3>
+        <table id="tb-geo"></table>
+      </div>
+      <div class="card panel" style="animation-delay:.8s">
+        <h3>Payment methods<span class="hint">share of completed orders</span></h3>
+        <div id="pay-list"></div>
+      </div>
+    </div>
+
+    <p class="footer-note">
+      ShopStream · ETL pipeline in Python (validate → dedup → enrich → aggregate) → this dashboard.<br>
+      Designed &amp; engineered by <b>Arun Prajapati</b> · github.com/Arun3622
+    </p>
+  </div>
+</div>
+</div>
+
+<script>
+const DATA=__DATA_JSON__;
+const fmt$=v=>"$"+Number(v).toLocaleString("en-US",{maximumFractionDigits:0});
+Chart.defaults.color="#69718a";Chart.defaults.borderColor="#eef0f6";Chart.defaults.font.family="Inter";
+document.getElementById("ft-events").textContent=DATA.kpis.total_events.toLocaleString();
+document.getElementById("ft-dq").textContent=DATA.kpis.quarantined_records.toLocaleString();
+
+/* strip */
+(function(){
+  let h="";
+  DATA.daily_trend.slice(-12).forEach(d=>{
+    const up=d.orders>=0;
+    h+=`<span class="chip">${d.date} · <b>${fmt$(d.revenue)}</b> · <span class="${up?'g':'r'}">${d.orders} orders</span></span>`;
+  });
+  document.getElementById("strip").innerHTML=h+h;
+})();
+
+/* KPI cards */
+(function(){
+  const k=DATA.kpis;
+  const items=[
+    {l:"Gross revenue",v:fmt$(k.gross_revenue),s:"90-day all-time",cls:""},
+    {l:"Net revenue",v:fmt$(k.net_revenue),s:"after processing fees",cls:""},
+    {l:"Completed orders",v:Number(k.total_orders).toLocaleString(),s:"AOV "+fmt$(k.avg_order_value),cls:"g"},
+    {l:"Total profit",v:fmt$(k.total_profit),s:"blended margin",cls:"g"},
+    {l:"Unique customers",v:Number(k.unique_customers).toLocaleString(),s:"across 5 countries+",cls:""},
+    {l:"Quarantined records",v:Number(k.quarantined_records).toLocaleString(),s:"caught by validation",cls:"r"},
+  ];
+  document.getElementById("kpis").innerHTML=items.map(it=>`
+    <div class="card kpi">
+      <div class="lab">${it.l}</div><div class="val">${it.v}</div>
+      <div class="sub ${it.cls}">${it.s}</div>
+      <canvas class="spark" data-lab="${it.l}" width="150" height="30"></canvas>
+    </div>`).join("");
+
+  /* mini sparklines */
+  const revSeries=DATA.daily_trend.slice(-30).map(d=>d.revenue);
+  const ordSeries=DATA.daily_trend.slice(-30).map(d=>d.orders);
+  const catSeries=DATA.by_category.map(c=>c.revenue).reverse();
+  const hourSeries=DATA.hourly_load.map(h=>h.orders);
+  const sparks=document.querySelectorAll(".spark");
+  const sets=[revSeries,revSeries.map(v=>v*0.94),ordSeries,
+              DATA.daily_trend.slice(-30).map(d=>d.profit||d.aov),
+              DATA.geo.map(g=>g.customers),
+              Array.from({length:30},(_,i)=>DATA.kpis.quarantined_records*(0.5+((i*37)%50)/100))];
+  sparks.forEach((cv,i)=>{
+    const s=sets[i]&&sets[i].length>1?sets[i]:hourSeries;
+    new Chart(cv,{type:"line",data:{labels:s.map((_,j)=>j),datasets:[{data:s,borderColor:"#5457e0",borderWidth:1.5,pointRadius:0,tension:.45}]},
+      options:{responsive:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+  });
+})();
+
+/* revenue chart */
+new Chart(document.getElementById("ch-rev"),{
+ type:"line",
+ data:{labels:DATA.daily_trend.map(d=>d.date),datasets:[
+   {label:"Daily gross",data:DATA.daily_trend.map(d=>d.revenue),borderColor:"#5457e0",
+    backgroundColor:"rgba(84,87,224,.08)",fill:true,tension:.38,borderWidth:2,pointRadius:0},
+   {label:"7-day MA",data:DATA.daily_trend.map(d=>d.revenue_ma7),borderColor:"#e11d74",
+    borderDash:[6,5],tension:.38,borderWidth:1.8,pointRadius:0}]},
+ options:{maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+  animation:{duration:1500,easing:"easeOutQuart"},
+  plugins:{legend:{labels:{usePointStyle:true,boxWidth:8}}},
+  scales:{y:{ticks:{callback:v=>"$"+(v>=1000?(v/1000).toFixed(0)+"k":v)}},x:{ticks:{maxTicksLimit:10}}}}});
+
+/* category donut */
+new Chart(document.getElementById("ch-cat"),{
+ type:"doughnut",
+ data:{labels:DATA.by_category.map(c=>c.category),
+  datasets:[{data:DATA.by_category.map(c=>c.revenue),
+   backgroundColor:["#5457e0","#8b5cf6","#ec4899","#f59e0b","#10b981","#0ea5e9"],
+   borderWidth:2,borderColor:"#fff",hoverOffset:10}]},
+ options:{maintainAspectRatio:false,cutout:"60%",
+  animation:{animateRotate:true,duration:1400,easing:"easeOutQuart"},
+  plugins:{legend:{position:"right",labels:{usePointStyle:true,boxWidth:8,padding:12}}}}});
+
+/* top products table */
+(function(){
+  document.getElementById("tb-prod").innerHTML=
+   `<thead><tr><th>#</th><th>Product</th><th>Units</th><th style="text-align:right">Revenue</th></tr></thead><tbody>`+
+   DATA.top_products.slice(0,8).map((p,i)=>`
+    <tr><td><span class="pill i">${i+1}</span></td><td>${p.product_name}<br><span style="color:#9aa1b8;font-size:10.5px">${p.category}</span></td>
+    <td>${p.units.toLocaleString()}</td><td style="text-align:right;font-weight:700">${fmt$(p.revenue)}</td></tr>`).join("")+`</tbody>`;
+})();
+
+/* hourly chart */
+new Chart(document.getElementById("ch-hour"),{
+ type:"bar",
+ data:{labels:DATA.hourly_load.map(h=>String(h.hour).padStart(2,"0")),
+  datasets:[{data:DATA.hourly_load.map(h=>h.orders),borderRadius:5,
+   backgroundColor:h=>h.raw>=Math.max(...DATA.hourly_load.map(x=>x.orders))?"#5457e0":"#d9dbfa"}]},
+ options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+  animation:{delay:ctx=>ctx.dataIndex*25,duration:900,easing:"easeOutCubic"},
+  scales:{x:{ticks:{maxTicksLimit:12,font:{size:9.5}}},y:{grid:{drawTicks:false}}}}});
+
+/* geo table */
+(function(){
+  document.getElementById("tb-geo").innerHTML=
+   `<thead><tr><th>City</th><th>Country</th><th>Customers</th><th style="text-align:right">Revenue</th></tr></thead><tbody>`+
+   DATA.geo.slice(0,8).map(g=>`
+    <tr><td style="font-weight:600">${g.city}</td><td>${g.country}</td>
+    <td>${Number(g.customers).toLocaleString()}</td><td style="text-align:right;font-weight:700">${fmt$(g.revenue)}</td></tr>`).join("")+`</tbody>`;
+})();
+
+/* payment share bars */
+(function(){
+  const total=Object.values(DATA.payment_mix).reduce((a,b)=>a+b,0);
+  const colors=["#5457e0","#8b5cf6","#ec4899","#f59e0b","#10b981"];
+  let i=0,html="";
+  for(const [name,count] of Object.entries(DATA.payment_mix)){
+    const pct=(count/total*100).toFixed(1);
+    html+=`<div style="margin:13px 0 0">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+      <span style="font-weight:600">${name.replace("_"," ")}</span>
+      <span style="color:var(--mut)">${pct}% · ${count.toLocaleString()}</span></div>
+      <div style="height:8px;border-radius:99px;background:#eef0f6;overflow:hidden">
+      <div class="pfill" data-w="${pct}" data-c="${colors[i%colors.length]}"
+       style="height:100%;width:0;border-radius:99px;transition:width 1.3s cubic-bezier(.25,.9,.3,1)"></div></div></div>`;
+    i++;
+  }
+  document.getElementById("pay-list").innerHTML=html;
+  requestAnimationFrame(()=>setTimeout(()=>{
+    document.querySelectorAll(".pfill").forEach(b=>{b.style.background=b.dataset.c;b.style.width=b.dataset.w+"%";});
+  },350));
+})();
+</script>
+</body>
+</html>
